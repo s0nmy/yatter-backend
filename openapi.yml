@@ -1,0 +1,798 @@
+openapi: 3.0.0
+info:
+  description:
+    "This is a sample server Twitter Clone server.  You can find out more
+    about     Swagger at [http://swagger.io](http://swagger.io) or on
+    [irc.freenode.net, #swagger](http://swagger.io/irc/)."
+  version: 1.0.0
+  title: Swagger Twitter Clone
+  contact: {}
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+servers:
+  - url: http://localhost:8080/v1
+tags:
+  - name: health
+    description: Endpoint for healthchecks
+  - name: auth
+    description: Everything about Authentication
+  - name: users
+    description: Everything about Users
+    externalDocs:
+      description: Find out more
+      url: http://example.com
+  - name: images
+    description: Everything about Images
+    externalDocs:
+      description: Find out more
+      url: http://example.com
+  - name: yweets
+    description: Everything about Yweets
+    externalDocs:
+      description: Find out more
+      url: http://example.com
+  - name: timelines
+    description: Everything about Timelines
+    externalDocs:
+      description: Find out more
+      url: http://example.com
+paths:
+  /health:
+    head:
+      tags:
+        - health
+      summary: Endpoint for healthchecks
+      description: ""
+      operationId: headHealth
+      responses:
+        "200":
+          description: OK
+    get:
+      tags:
+        - health
+      summary: Endpoint for healthchecks
+      description: ""
+      operationId: getHealth
+      responses:
+        "200":
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: OK
+  /auth/login:
+    post:
+      tags:
+        - auth
+      summary: Login
+      description: ""
+      operationId: login
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  example: john
+                  description: The username of the user
+                password:
+                  type: string
+                  example: P@ssw0rd
+                  description: Password of user
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  username:
+                    type: string
+                    example: "john"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "500":
+          $ref: "#/components/responses/500"
+  /users:
+    post:
+      tags:
+        - users
+      summary: Creating an user
+      description: ""
+      operationId: addUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  example: john
+                  description: The username of the user
+                password:
+                  type: string
+                  example: P@ssw0rd
+                  description: Password of user
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/400"
+        "500":
+          $ref: "#/components/responses/500"
+  /users/update_credentials:
+    post:
+      security:
+        - Auth: []
+      tags:
+        - users
+      summary: Updating an user
+      description: ""
+      operationId: updateUser
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                display_name:
+                  description: "The name to display in the user's profile  "
+                  type: string
+                note:
+                  description: A new biography for the user
+                  type: string
+                avatar:
+                  description: An avatar for the user (encoded using multipart/form-data)
+                  type: string
+                  format: binary
+                header:
+                  description: A header image for the user (encoded using
+                    multipart/form-data)
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+  "/users/{username}":
+    get:
+      tags:
+        - users
+      summary: Fetching an user
+      description: ""
+      operationId: findUserByUsername
+      parameters:
+        - name: username
+          in: path
+          description: Username of user to return
+          required: true
+          example: john
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/400"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+  "/users/{username}/follow":
+    post:
+      security:
+        - Auth: []
+      tags:
+        - users
+      summary: Following an user
+      description: ""
+      operationId: followUser
+      parameters:
+        - name: username
+          in: path
+          description: Username of user to follow
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Relationship"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+  "/users/{username}/following":
+    get:
+      tags:
+        - users
+      summary: Getting who user is following
+      description: ""
+      operationId: findFollowing
+      parameters:
+        - name: username
+          in: path
+          description: Username of user to follow
+          required: true
+          schema:
+            type: string
+        - name: offset
+          in: query
+          description: 0-indexed offset of the first following user to return
+          required: false
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          description: Maximum number of followings to get (Default 40, Max 80)
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/400"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+  "/users/{username}/followers":
+    get:
+      tags:
+        - users
+      summary: Getting an user's followers
+      description: ""
+      operationId: findFollowers
+      parameters:
+        - name: username
+          in: path
+          description: Username of user to follow
+          required: true
+          schema:
+            type: string
+        - name: offset
+          in: query
+          description: 0-indexed offset of the first follower to return
+          required: false
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          description: Maximum number of followings to get (Default 40, Max 80)
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/400"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+  "/users/{username}/unfollow":
+    post:
+      security:
+        - Auth: []
+      tags:
+        - users
+      summary: Unfollowing an user
+      description: ""
+      operationId: unfollowUser
+      parameters:
+        - name: username
+          in: path
+          description: Username of user to follow
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Relationship"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+  /users/relationships:
+    get:
+      security:
+        - Auth: []
+      tags:
+        - users
+      summary: Getting an user's relationships
+      description: ""
+      operationId: findRelationships
+      parameters:
+        - name: username
+          in: query
+          description: User Usernames (Username Must be Separated by Comma)
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Relationship"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+  /images:
+    post:
+      tags:
+        - images
+      summary: Uploading images attachment
+      description: ""
+      operationId: addImages
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  description: Images to be uploaded (encoded using multipart/form-data)
+                  type: string
+                  format: binary
+              required:
+                - file
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Image"
+        "400":
+          $ref: "#/components/responses/400"
+        "500":
+          $ref: "#/components/responses/500"
+  /yweets:
+    post:
+      security:
+        - Auth: []
+      tags:
+        - yweets
+      summary: Posting a new yweet
+      description: ""
+      operationId: addYweet
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                yweet:
+                  type: string
+                  example: this is example text
+                  description: The text of the yweet
+                images:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/AttachmentRequest"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Yweet"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "500":
+          $ref: "#/components/responses/500"
+  "/yweets/{id}":
+    get:
+      tags:
+        - yweets
+      summary: Fetching an yweet
+      description: ""
+      operationId: findYweetByID
+      parameters:
+        - name: id
+          in: path
+          description: ID of Yweet to return
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Yweet"
+        "400":
+          $ref: "#/components/responses/400"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+    delete:
+      security:
+        - Auth: []
+      tags:
+        - yweets
+      summary: Deleting a yweet
+      description: ""
+      operationId: deleteYweet
+      parameters:
+        - name: id
+          in: path
+          description: ID of Yweet to delete
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+        "400":
+          $ref: "#/components/responses/400"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+  /timelines/home:
+    get:
+      security:
+        - Auth: []
+      tags:
+        - timelines
+      summary: Retrieving a timeline
+      description: ""
+      operationId: findHomeTimelines
+      parameters:
+        - $ref: "#/components/parameters/OnlyImageParam"
+        - $ref: "#/components/parameters/OffsetParam"
+        - $ref: "#/components/parameters/LimitParam"
+      responses:
+        "200":
+          $ref: "#/components/responses/YweetArrayResponse"
+        "400":
+          $ref: "#/components/responses/400"
+        "500":
+          $ref: "#/components/responses/500"
+  /timelines/public:
+    get:
+      tags:
+        - timelines
+      summary: Retrieving a timeline
+      description: ""
+      operationId: findPublicTimelines
+      parameters:
+        - $ref: "#/components/parameters/OnlyImageParam"
+        - $ref: "#/components/parameters/OffsetParam"
+        - $ref: "#/components/parameters/LimitParam"
+      responses:
+        "200":
+          $ref: "#/components/responses/YweetArrayResponse"
+        "400":
+          $ref: "#/components/responses/400"
+        "500":
+          $ref: "#/components/responses/500"
+externalDocs:
+  description: Find out more about Swagger
+  url: http://example.com
+components:
+  securitySchemes:
+    Auth:
+      type: apiKey
+      name: Authentication
+      in: header
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: User ID
+          example: 0
+          x-faker:
+            datatype.number:
+              min: 0
+              max: 10000
+        username:
+          type: string
+          description: The username of the user
+          example: john
+          x-faker: internet.userName
+        display_name:
+          type: string
+          description: The user's display name
+          example: John Doe
+          x-faker: name.findName
+        created_at:
+          type: string
+          format: date-time
+          description: The time the user was created
+          x-faker: date.past
+        followers_count:
+          type: integer
+          description: The number of followers for the user
+          example: 52
+          x-faker:
+            datatype.number:
+              min: 0
+              max: 10000
+        following_count:
+          type: integer
+          description: The number of users the given user is following
+          example: 128
+          x-faker:
+            datatype.number:
+              min: 0
+              max: 10000
+        note:
+          type: string
+          description: Biography of user
+          x-faker: lorem.paragraph
+        avatar:
+          type: string
+          description: URL to the avatar image
+          x-faker: image.imageUrl
+        header:
+          type: string
+          description: URL to the header image
+          x-faker: image.imageUrl
+      required:
+        - id
+        - username
+        - created_at
+        - followers_count
+        - following_count
+    Relationship:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Target user id
+          x-faker:
+            datatype.number:
+              min: 0
+              max: 10000
+        following:
+          type: boolean
+          description: Whether the user is currently following the user
+          x-faker: random.boolean
+        followed_by:
+          type: boolean
+          description: Whether the user is currently being followed by the user
+          x-faker: random.boolean
+      required:
+        - id
+        - following
+        - followed_by
+    Image:
+      type: object
+      properties:
+        image_id:
+          type: integer
+          description: an identifier related uploaded image
+          example: 123
+        image_url:
+          type: string
+          description: URL of uploaded image
+          example: "https://dummyimage.com/600x800"
+          x-faker: image.imageUrl
+      required:
+        - image_id
+        - image_url
+    AttachmentRequest:
+      type: object
+      properties:
+        image_id:
+          type: integer
+          description: an identifier related uploaded file
+          example: 123
+          x-faker:
+            datatype.number:
+              min: 0
+              max: 10000
+        description:
+          description: uploaded file description
+          type: string
+          example: "hoge hoge"
+          x-faker: lorem.sentence
+      required:
+        - image_id
+        - description
+    Attachment:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID of the attachment
+          example: 123
+          x-faker:
+            datatype.number:
+              min: 0
+              max: 10000
+        type:
+          type: string
+          description: 'One of: "image", "video", "gifv", "unknown"'
+          example: "image"
+          x-faker: random.arrayElement(["image", "video", "gifv", "unknown"])
+        url:
+          type: string
+          description: URL of the image
+          x-faker: image.imageUrl
+        description:
+          type: string
+          description: A description of the image for the visually impaired (maximum 420 characters), or `null` if none provided
+          x-faker: lorem.sentence
+      required:
+        - id
+        - type
+        - url
+    Yweet:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: The ID of the yweet
+          example: 123
+          x-faker:
+            datatype.number:
+              min: 0
+              max: 10000
+        user:
+          $ref: "#/components/schemas/User"
+        content:
+          type: string
+          description: Body of the yweet; this will contain HTML (remote HTML already sanitized)
+          example: this is example text
+          nullable: false
+          x-faker: lorem.paragraph
+        created_at:
+          type: string
+          format: date-time
+          description: The time the yweet was created
+          nullable: false
+          x-faker: date.past
+        image_attachments:
+          type: array
+          nullable: false
+          items:
+            $ref: "#/components/schemas/Attachment"
+      required:
+        - id
+        - user
+        - content
+        - created_at
+        - image_attachments
+  parameters:
+    OnlyImageParam:
+      name: only_image
+      in: query
+      description: Only return yweets that have image attachments (public and tag timelines only)
+      required: false
+      schema:
+        type: boolean
+        example: false
+    OffsetParam:
+      name: offset
+      in: query
+      description: 0-indexed offset of the first yweet to return
+      required: false
+      schema:
+        type: integer
+    LimitParam:
+      name: limit
+      in: query
+      description: Maximum number of followings to get (Default 40, Max 80)
+      required: false
+      schema:
+        type: integer
+  responses:
+    YweetArrayResponse:
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: "#/components/schemas/Yweet"
+    400:
+      description: "Bad Request"
+      content:
+        text/plain:
+          schema:
+            type: "string"
+            example: "bad request"
+    401:
+      description: "Unauthorized"
+      content:
+        text/plain:
+          schema:
+            type: "string"
+            example: "unauthorized"
+    404:
+      description: "Resource Not Found"
+      content:
+        text/plain:
+          schema:
+            type: "string"
+            example: "resource not found"
+    500:
+      description: "Internal Server Error"
+      content:
+        text/plain:
+          schema:
+            type: "string"
+            example: "internal server error"

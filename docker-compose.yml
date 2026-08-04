@@ -1,0 +1,59 @@
+services:
+  mysql:
+    platform: linux/x86_64
+    image: mysql:5.7
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: yatter
+      MYSQL_ALLOW_EMPTY_PASSWORD: "true"
+      MYSQL_USER: yatter
+      MYSQL_PASSWORD: yatter
+    volumes:
+      - "./.data/mysql:/var/lib/mysql"
+      - "./mysql/conf.d:/etc/mysql/conf.d"
+    restart: on-failure
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    working_dir: "/work/yatter-backend-go"
+    command: ["go", "tool", "air"]
+    volumes:
+      - ".:/work/yatter-backend-go"
+      - "./.data/go-pkg:/go/pkg/mod/cache"
+    ports:
+      - "8080:8080"
+    environment:
+      ENV: Development
+      MYSQL_DATABASE: yatter
+      MYSQL_USER: yatter
+      MYSQL_PASSWORD: yatter
+      MYSQL_HOST: "mysql:3306"
+    depends_on:
+      - mysql
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/v1/health"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: on-failure
+
+  swagger-ui:
+    image: swaggerapi/swagger-ui
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./openapi.yml:/data/openapi.yml
+    environment:
+      SWAGGER_JSON: /data/openapi.yml
+
+  adminer:
+    image: adminer
+    ports:
+      - 8082:8080
+    depends_on:
+      - mysql
