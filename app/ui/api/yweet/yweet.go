@@ -40,7 +40,7 @@ func (h *yweetHandlerImpl) CreateYweet(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(r.Header.Get("Authentication"))
 
 	// username を受け取って格納する
-	username := strings.Split(r.Header.Get("Authentication"), " ")[1]
+	username := strings.TrimSpace(r.Header.Get("Authentication"))
 
 	var req PostYweetRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

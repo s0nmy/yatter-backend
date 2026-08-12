@@ -38,11 +38,9 @@ func (y *YweetRepoImpl) Insert(ctx context.Context, Yweet *yweet.Yweet) (*yweet.
 
 	insertResult, err := tx.ExecContext(
 		ctx,
-		`INSERT INTO yweet (id, user_id, content, created_at) VALUES (?, ?, ?, ?)`,
+		`INSERT INTO yweet (user_id, content) VALUES (?, ?)`,
 		Yweet.UserID(),
 		Yweet.Content(),
-		"",
-		"",
 	)
 	if err != nil {
 		return nil, err
