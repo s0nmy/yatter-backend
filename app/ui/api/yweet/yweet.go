@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	userObject "yatter-backend-go/app/domain/object/user"
 	ui_errors "yatter-backend-go/app/ui/api/pkg/errors"
+	handlerUser "yatter-backend-go/app/ui/api/user"
 	yweetUseCase "yatter-backend-go/app/usecase/yweet"
 	"yatter-backend-go/pkg/errors"
 )
@@ -47,14 +49,14 @@ func (h *yweetHandlerImpl) CreateYweet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// yweet投稿ユースケースを呼び出し
-	createdYweet, err := h.yweetCreateUseCase.CreateYweet(ctx, username, req.Content)
+	createdYweet, createdUser, err := h.yweetCreateUseCase.CreateYweet(ctx, username, req.Content)
 	if err != nil {
 		ui_errors.Handle(w, err)
 		return
 	}
 
 	// レスポンスに変換
-	resp := toPostYweetResponse(createdYweet, user)
+	resp := toPostYweetResponse(createdYweet, toPostUserResponse(createdUser))
 
 	// レスポンスをエンコードして返す
 	w.Header().Set("Content-Type", "application/json")
@@ -62,5 +64,19 @@ func (h *yweetHandlerImpl) CreateYweet(w http.ResponseWriter, r *http.Request) {
 	if err = json.NewEncoder(w).Encode(resp); err != nil {
 		ui_errors.Handle(w, errors.ErrInternal.WithDevMessage(fmt.Sprintf("failed to encode response: %s", err.Error())))
 		return
+	}
+}
+
+func toPostUserResponse(usr *userObject.User) *handlerUser.PostUsersResponse {
+	return &handlerUser.PostUsersResponse{
+		ID:             usr.ID(),
+		Username:       usr.Username(),
+		DisplayName:    "",
+		CreatedAt:      usr.CreatedAt().Format("2006-01-02T15:04:05.000Z"),
+		FollowersCount: 0,
+		FollowingCount: 0,
+		Note:           "",
+		Avatar:         "",
+		Header:         "",
 	}
 }

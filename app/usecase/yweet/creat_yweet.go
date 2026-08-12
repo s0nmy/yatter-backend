@@ -14,7 +14,7 @@ import (
 // 概念を呼びたいので、具体的なもの(構造体)を作りたくない
 
 type CreateYweetUseCase interface {
-	CreateYweet(ctx context.Context, username string, content string) (*yweet.Yweet, error)
+	CreateYweet(ctx context.Context, username string, content string) (*yweet.Yweet, *user.User, error)
 }
 
 var _ CreateYweetUseCase = (*createYweetUseCaseImpl)(nil)
@@ -23,6 +23,12 @@ type createYweetUseCaseImpl struct {
 	userRepo   repository.User
 	yweetRepo  repository.Yweet
 	transactor transactor.Transactor
+}
+
+// 投稿自体を1つの構造体とする
+type createYweetResult struct {
+	yweet *yweet.Yweet
+	user  *user.User
 }
 
 func NewYweetCreateUseCase(
@@ -41,34 +47,36 @@ func (uc *createYweetUseCaseImpl) CreateYweet(ctx context.Context, username stri
 	// トランザクション処理
 	result, err := uc.transactor.TransactionWithValue(ctx, func(ctx context.Context) (any, error) {
 
-		userID, err := uc.userRepo.FindByUsername(ctx, username)
+		// usr は *user.User を受け取っている
+		usr, err := uc.userRepo.FindByUsername(ctx, username)
+		if err != nil {
+			return nil, err
+		}
 
-		yweet, err := yweet.NewYweet(
+		newYweet, err := yweet.NewYweet(
 			0,
-			userID.ID(),
+			usr.ID(),
 			content,
 			time.Time{})
 		if err != nil {
 			return nil, err
 		}
 
-		InsertedYweet, err := uc.yweetRepo.Insert(ctx, yweet)
+		insertedYweet, err := uc.yweetRepo.Insert(ctx, newYweet)
 		if err != nil {
 			return nil, err
 		}
 
-		user
-
-		return InsertedYweet, nil
+		return &createYweetResult{yweet: insertedYweet, user: usr}, nil
 	})
 	if err != nil {
 		return nil, nil, err
 	}
 
-	yweet, ok := result.(*yweet.Yweet)
+	created, ok := result.(*createYweetResult)
 	if !ok {
-		return nil, nil, errors.ErrInternal.WithDevMessage("failed to cast result to yweet.Yweet")
+		return nil, nil, errors.ErrInternal.WithDevMessage("failed to cast result to createYweetResult")
 	}
 
-	return yweet, user, nil
+	return created.yweet, created.user, nil
 }
