@@ -14,6 +14,7 @@ type Handler interface {
 	SignUp(w http.ResponseWriter, r *http.Request)
 }
 
+// usecaseを受け取って当てはめてるだけ
 func NewUserHandler(userCreateUseCase user.SignUpUseCase) Handler {
 	return &userHandlerImpl{
 		userCreateUseCase: userCreateUseCase,
@@ -28,6 +29,7 @@ type userHandlerImpl struct {
 }
 
 // SignUpUser: ユーザー新規登録
+// *userHandlerImpl: レシーバー(構造体を入れて構造体からしか呼べないことを宣言している)
 func (h *userHandlerImpl) SignUp(w http.ResponseWriter, r *http.Request) {
 	// リクエストをデコード
 	var req PostUsersRequest

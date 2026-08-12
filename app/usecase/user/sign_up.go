@@ -16,12 +16,14 @@ type SignUpUseCase interface {
 var _ SignUpUseCase = (*SignUpUseCaseImpl)(nil)
 
 type SignUpUseCaseImpl struct {
+	// domainのものを呼び出しておく
 	userRepo              repository.User
 	usernameUniqueChecker *service.UsernameUniqueChecker
 	transactor            transactor.Transactor
 }
 
 func NewUserCreateUseCase(
+	// 使うものを持ってくる
 	userRepo repository.User,
 	usernameUniqueChecker *service.UsernameUniqueChecker,
 	transactor transactor.Transactor,
@@ -42,6 +44,8 @@ func (uc *SignUpUseCaseImpl) SignUp(ctx context.Context, username, password stri
 		}
 
 		// 仮登録ユーザーを生成
+		// uuid などはまだ決まっていない(サーバー側で決めるため)
+		// 生焼け構造体
 		pendingUser, err := user.NewPendingUser(username, password, isUniqueUsername)
 		if err != nil {
 			return nil, err
