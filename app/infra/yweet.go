@@ -19,10 +19,10 @@ func NewYweetRepository() *YweetRepoImpl {
 	return &YweetRepoImpl{}
 }
 
-// yweetDTO: ユーザー用のデータ詰め替え構造体
+// yweetDTO: Yweet 用のデータ詰め替え構造体
 // DBからデータ取得する際の、テーブル定義 <-> ドメインモデルの変換を行う
 // TODO: 本当は別ファイルに定義した方がわかりやすそう
-type insertedYweetDTO struct {
+type yweetDTO struct {
 	ID        uint64    `db:"id"`
 	UserID    uint64    `db:"user_id"`
 	Content   string    `db:"content"`
@@ -51,17 +51,41 @@ func (y *YweetRepoImpl) Insert(ctx context.Context, Yweet *yweet.Yweet) (*yweet.
 		return nil, err
 	}
 
-	var insertedYweetDTO insertedYweetDTO
-	err = tx.GetContext(ctx, &insertedYweetDTO, `SELECT id, user_id, content, created_at FROM yweet WHERE id = ?`, yweetID)
+	var dto yweetDTO
+	err = tx.GetContext(ctx, &dto, `SELECT id, user_id, content, created_at FROM yweet WHERE id = ?`, yweetID)
 	if err != nil {
 		// NOTE: インサート済みであるはずなので、 sql.NoRows の場合でもエラーとして返す
 		return nil, err
 	}
 
-	Yweet.SetID(insertedYweetDTO.ID)
-	Yweet.SetUserID(insertedYweetDTO.UserID)
-	Yweet.SetContent(insertedYweetDTO.Content)
-	Yweet.SetCreatedAt(insertedYweetDTO.CreatedAt)
+	Yweet.SetID(dto.ID)
+	Yweet.SetUserID(dto.UserID)
+	Yweet.SetContent(dto.Content)
+	Yweet.SetCreatedAt(dto.CreatedAt)
 
 	return Yweet, nil
+}
+
+func (y *YweetRepoImpl) SelectAll(ctx context.Context) ([]*yweet.Yweet, error) {
+	tx, err := transaction.FetchTransaction(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var yweetDTOs []yweetDTO
+	err = tx.SelectContext(ctx, &yweetDTOs, `SELECT id, user_id, content, created_at FROM yweet`)
+	if err != nil {
+		return nil, err
+	}
+
+	yweets := make([]*yweet.Yweet, 0, len(yweetDTOs))
+	for _, dto := range yweetDTOs {
+		yweet, err := yweet.NewYweet(dto.ID, dto.UserID, dto.Content, dto.CreatedAt)
+		if err != nil {
+			return nil, err
+		}
+		yweets = append(yweets, yweet)
+	}
+
+	return yweets, nil
 }
