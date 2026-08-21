@@ -17,10 +17,12 @@ import (
 	"yatter-backend-go/app/infra/transaction"
 	api_auth "yatter-backend-go/app/ui/api/auth"
 	"yatter-backend-go/app/ui/api/health"
+	api_timeline "yatter-backend-go/app/ui/api/timeline"
 	api_user "yatter-backend-go/app/ui/api/user"
 	api_yweet "yatter-backend-go/app/ui/api/yweet"
 
 	"yatter-backend-go/app/usecase/auth"
+	timelineUseCase "yatter-backend-go/app/usecase/timeline"
 	"yatter-backend-go/app/usecase/user"
 	yweetUseCase "yatter-backend-go/app/usecase/yweet"
 
@@ -64,11 +66,16 @@ func Run(db *sqlx.DB) error {
 		yweetRepo,
 		transactor,
 	)
+	timelineGetPublicTimelineUseCase := timelineUseCase.NewGetPublicTimelineUseCase(
+		yweetRepo,
+		transactor,
+	)
 
 	// Handler
 	userHandler := api_user.NewUserHandler(userCreateUseCase)
 	authHandler := api_auth.NewAuthHandler(loginUseCase)
 	yweetHandler := api_yweet.NewYweetHandler(yweetUsecase)
+	timelineHandler := api_timeline.NewTimelineHandler(timelineGetPublicTimelineUseCase)
 
 	// ルーターの設定
 	r := chi.NewRouter()
@@ -99,6 +106,11 @@ func Run(db *sqlx.DB) error {
 		// ywaeet関連
 		r.Route("/yweets", func(r chi.Router) {
 			r.Post("/", yweetHandler.CreateYweet)
+		})
+
+		// timeline関連
+		r.Route("/timelines/public", func(r chi.Router) {
+			r.Get("/", timelineHandler.GetPublicTimeline)
 		})
 
 		// ヘルスチェック
